@@ -6,3 +6,12 @@ body {
   background: #0f0f0f;
   color: #e5e5e5;
 }
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
