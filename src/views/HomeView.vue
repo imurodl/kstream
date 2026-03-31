@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import type { Show } from '../types'
-import { getTrending, discoverKoreanTV } from '../services/tmdb'
+import { discoverKoreanTV } from '../services/tmdb'
 import { useWatchlistStore } from '../stores/watchlist'
 import HeroSection from '../components/HeroSection.vue'
 import ContentRow from '../components/ContentRow.vue'
@@ -21,7 +21,7 @@ const error = ref('')
 onMounted(async () => {
   try {
     const [trendingRes, dramaRes, comedyRes, newRes] = await Promise.all([
-      getTrending(),
+      discoverKoreanTV({ sortBy: 'popularity.desc' }),
       discoverKoreanTV({ genreId: '18' }),
       discoverKoreanTV({ genreId: '35' }),
       discoverKoreanTV({ sortBy: 'first_air_date.desc' }),
