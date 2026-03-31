@@ -12,7 +12,7 @@ const { t } = useI18n()
 const watchlistStore = useWatchlistStore()
 const continueWatching = computed(() => watchlistStore.getContinueWatching())
 
-const heroShow = ref<Show | null>(null)
+const heroShows = ref<Show[]>([])
 const trending = ref<Show[]>([])
 const dramas = ref<Show[]>([])
 const comedy = ref<Show[]>([])
@@ -32,7 +32,7 @@ onMounted(async () => {
     const withPoster = (shows: Show[]) => shows.filter(s => s.poster_path)
 
     trending.value = withPoster(trendingRes.results)
-    heroShow.value = trendingRes.results.find(s => s.backdrop_path) || null
+    heroShows.value = trendingRes.results.filter(s => s.backdrop_path).slice(0, 5)
     dramas.value = withPoster(dramaRes.results)
     comedy.value = withPoster(comedyRes.results)
     newReleases.value = withPoster(newRes.results)
@@ -55,7 +55,7 @@ onMounted(async () => {
 
     <template v-else>
       <div v-if="loading" class="w-full h-[70vh] min-h-[400px] max-h-[700px] bg-gray-900 animate-pulse" />
-      <HeroSection v-else-if="heroShow" :show="heroShow" />
+      <HeroSection v-else-if="heroShows.length" :shows="heroShows" />
 
       <section v-if="continueWatching.length" class="mt-6 mb-8">
         <h2 class="text-lg sm:text-xl font-semibold text-white mb-3 px-4 sm:px-6 lg:px-8">{{ t('home.continueWatching') }}</h2>
