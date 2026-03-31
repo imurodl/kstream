@@ -13,6 +13,7 @@ const shows = ref<Show[]>([])
 const genres = ref<Genre[]>([])
 const loading = ref(true)
 const loadingMore = ref(false)
+const error = ref('')
 const page = ref(1)
 const totalPages = ref(1)
 
@@ -61,6 +62,7 @@ async function fetchShows(reset = true) {
     }
     totalPages.value = res.total_pages
   } catch (e) {
+    error.value = 'Failed to load shows. Please try again.'
     console.error('Failed to fetch shows:', e)
   } finally {
     loading.value = false
@@ -135,8 +137,14 @@ onMounted(async () => {
       </div>
     </div>
 
+    <!-- Error state -->
+    <div v-if="error" class="text-center py-20">
+      <p class="text-red-400 text-lg mb-2">{{ error }}</p>
+      <button @click="error = ''; fetchShows()" class="text-sm text-purple-400 hover:text-purple-300">Try again</button>
+    </div>
+
     <!-- Loading grid -->
-    <div v-if="loading" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+    <div v-else-if="loading" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
       <SkeletonCard v-for="i in 18" :key="i" class="!w-full" />
     </div>
 

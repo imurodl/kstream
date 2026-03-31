@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { Show } from '../types'
 import { backdropUrl } from '../services/tmdb'
 
 const props = defineProps<{ show: Show }>()
+const backdropFailed = ref(false)
 
 const year = computed(() => props.show.first_air_date?.slice(0, 4) || '')
 const rating = computed(() => props.show.vote_average?.toFixed(1))
@@ -18,10 +19,13 @@ const overview = computed(() => {
   <div class="relative w-full h-[70vh] min-h-[400px] max-h-[700px]">
     <!-- Backdrop image -->
     <img
+      v-if="!backdropFailed"
       :src="backdropUrl(show.backdrop_path, 'original')"
       :alt="show.name"
       class="absolute inset-0 w-full h-full object-cover"
+      @error="backdropFailed = true"
     />
+    <div v-else class="absolute inset-0 bg-gray-900" />
     <!-- Gradient overlays -->
     <div class="absolute inset-0 bg-gradient-to-r from-[#0f0f0f] via-[#0f0f0f]/60 to-transparent" />
     <div class="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-transparent to-[#0f0f0f]/30" />
