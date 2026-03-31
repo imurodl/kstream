@@ -30,8 +30,9 @@ function initPlayer() {
     controls: true,
     autoplay: false,
     preload: 'auto',
-    fluid: true,
+    fluid: false,
     responsive: true,
+    aspectRatio: '16:9',
     playbackRates: [0.5, 1, 1.25, 1.5, 2],
     html5: {
       vhs: {
@@ -158,9 +159,8 @@ onBeforeUnmount(() => {
 <style>
 .video-player-wrapper {
   width: 100%;
-  max-height: 70vh;
+  max-width: 100%;
   background: #000;
-  overflow: hidden;
 }
 
 /* Custom dark theme for Video.js */
