@@ -34,7 +34,6 @@ onMounted(async () => {
     newReleases.value = newRes.results
   } catch (e) {
     error.value = 'Failed to load content. Please check your API key.'
-    console.error(e)
   } finally {
     loading.value = false
   }

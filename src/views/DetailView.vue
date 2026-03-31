@@ -45,7 +45,7 @@ async function loadEpisodes(seasonNumber: number) {
     const res = await getSeasonEpisodes(show.value.id, seasonNumber)
     episodes.value = res.episodes
   } catch (e) {
-    console.error('Failed to load episodes:', e)
+    // episodes failed to load — show empty state
     episodes.value = []
   } finally {
     episodesLoading.value = false
@@ -64,7 +64,6 @@ onMounted(async () => {
     await loadEpisodes(selectedSeason.value)
   } catch (e) {
     error.value = 'Failed to load show details.'
-    console.error(e)
   } finally {
     loading.value = false
   }

@@ -88,7 +88,7 @@ onMounted(async () => {
       episodes.value = res.episodes
     }
   } catch (e) {
-    console.error('Failed to load show:', e)
+    // show failed to load
   } finally {
     loading.value = false
   }

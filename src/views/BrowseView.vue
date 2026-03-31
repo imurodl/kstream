@@ -63,7 +63,6 @@ async function fetchShows(reset = true) {
     totalPages.value = res.total_pages
   } catch (e) {
     error.value = 'Failed to load shows. Please try again.'
-    console.error('Failed to fetch shows:', e)
   } finally {
     loading.value = false
     loadingMore.value = false
