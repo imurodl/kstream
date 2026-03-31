@@ -159,8 +159,11 @@ onBeforeUnmount(() => {
 <style>
 .video-player-wrapper {
   width: 100%;
-  max-width: 100%;
+  max-height: 70vh;
   background: #000;
+}
+.video-player-wrapper .video-js {
+  max-height: 70vh;
 }
 
 /* Custom dark theme for Video.js */
