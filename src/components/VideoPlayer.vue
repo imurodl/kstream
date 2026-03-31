@@ -158,7 +158,9 @@ onBeforeUnmount(() => {
 <style>
 .video-player-wrapper {
   width: 100%;
+  max-height: 70vh;
   background: #000;
+  overflow: hidden;
 }
 
 /* Custom dark theme for Video.js */
