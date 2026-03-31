@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import type { PlaybackProgress } from '../types'
 import { posterUrl } from '../services/tmdb'
 
+const { t } = useI18n()
 const props = defineProps<{ item: PlaybackProgress }>()
 
 const progressPercent = computed(() => {
@@ -31,23 +33,21 @@ const progressPercent = computed(() => {
         </svg>
       </div>
 
-      <!-- Play overlay -->
       <div class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
         <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
           <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
         </svg>
       </div>
 
-      <!-- Progress bar -->
       <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-700">
         <div class="h-full bg-purple-500 transition-all" :style="{ width: `${progressPercent}%` }" />
       </div>
     </div>
     <h3 class="mt-2 text-sm font-medium text-gray-200 truncate group-hover:text-white transition-colors">
-      {{ item.showName || 'Unknown Show' }}
+      {{ item.showName || t('content.unknownShow') }}
     </h3>
     <p class="text-xs text-gray-500 truncate">
-      {{ item.episodeName || `Episode` }}
+      {{ item.episodeName || t('content.episode') }}
     </p>
   </RouterLink>
 </template>

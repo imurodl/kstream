@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import type { Show } from '../types'
 import { backdropUrl } from '../services/tmdb'
 
+const { t } = useI18n()
 const props = defineProps<{ show: Show }>()
 const backdropFailed = ref(false)
 
@@ -17,7 +19,6 @@ const overview = computed(() => {
 
 <template>
   <div class="relative w-full h-[70vh] min-h-[400px] max-h-[700px]">
-    <!-- Backdrop image -->
     <img
       v-if="!backdropFailed"
       :src="backdropUrl(show.backdrop_path, 'original')"
@@ -26,11 +27,9 @@ const overview = computed(() => {
       @error="backdropFailed = true"
     />
     <div v-else class="absolute inset-0 bg-gray-900" />
-    <!-- Gradient overlays -->
     <div class="absolute inset-0 bg-gradient-to-r from-[#0f0f0f] via-[#0f0f0f]/60 to-transparent" />
     <div class="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-transparent to-[#0f0f0f]/30" />
 
-    <!-- Content -->
     <div class="absolute inset-0 flex items-end pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8">
       <div class="max-w-xl">
         <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-3">
@@ -56,13 +55,13 @@ const overview = computed(() => {
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
             </svg>
-            Watch Now
+            {{ t('hero.watchNow') }}
           </RouterLink>
           <RouterLink
             :to="{ name: 'detail', params: { id: show.id } }"
             class="inline-flex items-center gap-2 bg-gray-600/50 text-white font-semibold px-6 py-2.5 rounded-md hover:bg-gray-600/70 transition-colors"
           >
-            More Info
+            {{ t('hero.moreInfo') }}
           </RouterLink>
         </div>
       </div>

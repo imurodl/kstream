@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import type { Show, Genre } from '../types'
 import { discoverKoreanTV, searchTV, getTVGenres, NETWORKS } from '../services/tmdb'
 import ContentCard from '../components/ContentCard.vue'
 import SkeletonCard from '../components/SkeletonCard.vue'
 import FilterChip from '../components/FilterChip.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 
 const shows = ref<Show[]>([])
@@ -24,18 +26,18 @@ const sortBy = ref<string>('popularity.desc')
 const searchQuery = computed(() => (route.query.q as string) || '')
 const isSearching = computed(() => searchQuery.value.length > 0)
 
-const sortOptions = [
-  { value: 'popularity.desc', label: 'Popularity' },
-  { value: 'vote_average.desc', label: 'Rating' },
-  { value: 'first_air_date.desc', label: 'Newest' },
-]
+const sortOptions = computed(() => [
+  { value: 'popularity.desc', label: t('browse.popularity') },
+  { value: 'vote_average.desc', label: t('browse.rating') },
+  { value: 'first_air_date.desc', label: t('browse.newest') },
+])
 
-const networkOptions = [
-  { id: '', label: 'All' },
+const networkOptions = computed(() => [
+  { id: '', label: t('browse.all') },
   { id: NETWORKS.KBS, label: 'KBS' },
   { id: NETWORKS.MBC, label: 'MBC' },
   { id: NETWORKS.SBS, label: 'SBS' },
-]
+])
 
 async function fetchShows(reset = true) {
   if (reset) {
@@ -62,7 +64,7 @@ async function fetchShows(reset = true) {
     }
     totalPages.value = res.total_pages
   } catch (e) {
-    error.value = 'Failed to load shows. Please try again.'
+    error.value = t('browse.errorLoad')
   } finally {
     loading.value = false
     loadingMore.value = false
@@ -76,12 +78,10 @@ function loadMore() {
   }
 }
 
-// Re-fetch when filters change
 watch([selectedGenre, selectedNetwork, sortBy], () => {
   if (!isSearching.value) fetchShows()
 })
 
-// Re-fetch when search query changes
 watch(searchQuery, () => fetchShows())
 
 onMounted(async () => {
@@ -93,17 +93,14 @@ onMounted(async () => {
 
 <template>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Title -->
     <h1 class="text-2xl sm:text-3xl font-bold text-white mb-6">
-      <template v-if="isSearching">Results for "{{ searchQuery }}"</template>
-      <template v-else>Browse</template>
+      <template v-if="isSearching">{{ t('browse.resultsFor', { query: searchQuery }) }}</template>
+      <template v-else>{{ t('browse.title') }}</template>
     </h1>
 
-    <!-- Filters (hidden during search) -->
     <div v-if="!isSearching" class="space-y-4 mb-8">
-      <!-- Genre chips -->
       <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        <FilterChip label="All" :active="selectedGenre === ''" @click="selectedGenre = ''" />
+        <FilterChip :label="t('browse.all')" :active="selectedGenre === ''" @click="selectedGenre = ''" />
         <FilterChip
           v-for="genre in genres"
           :key="genre.id"
@@ -113,7 +110,6 @@ onMounted(async () => {
         />
       </div>
 
-      <!-- Network tabs + Sort -->
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex gap-2">
           <FilterChip
@@ -136,22 +132,19 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Error state -->
     <div v-if="error" class="text-center py-20">
       <p class="text-red-400 text-lg mb-2">{{ error }}</p>
-      <button @click="error = ''; fetchShows()" class="text-sm text-purple-400 hover:text-purple-300">Try again</button>
+      <button @click="error = ''; fetchShows()" class="text-sm text-purple-400 hover:text-purple-300">{{ t('browse.tryAgain') }}</button>
     </div>
 
-    <!-- Loading grid -->
     <div v-else-if="loading" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
       <SkeletonCard v-for="i in 18" :key="i" class="!w-full" />
     </div>
 
-    <!-- Results grid -->
     <template v-else>
       <div v-if="shows.length === 0" class="text-center py-20">
-        <p class="text-gray-400 text-lg">No shows found.</p>
-        <p class="text-gray-600 text-sm mt-1">Try adjusting your filters or search query.</p>
+        <p class="text-gray-400 text-lg">{{ t('browse.noResults') }}</p>
+        <p class="text-gray-600 text-sm mt-1">{{ t('browse.noResultsHint') }}</p>
       </div>
 
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -163,14 +156,13 @@ onMounted(async () => {
         />
       </div>
 
-      <!-- Load More -->
       <div v-if="page < totalPages" class="flex justify-center mt-8">
         <button
           @click="loadMore"
           :disabled="loadingMore"
           class="px-6 py-2.5 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 hover:text-white transition-colors disabled:opacity-50"
         >
-          {{ loadingMore ? 'Loading...' : 'Load More' }}
+          {{ loadingMore ? t('browse.loading') : t('browse.loadMore') }}
         </button>
       </div>
     </template>

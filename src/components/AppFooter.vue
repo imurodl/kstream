@@ -1,38 +1,38 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 </script>
 
 <template>
   <footer class="border-t border-gray-800 bg-[#0a0a0a] mt-auto">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10">
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-8">
-        <!-- Brand -->
         <div>
           <span class="text-lg font-bold text-white tracking-wider">KSTREAM</span>
           <p class="text-sm text-gray-500 mt-2 leading-relaxed">
-            A Korean drama streaming platform demo built with Vue 3, TypeScript, and Video.js.
+            {{ t('footer.description') }}
           </p>
         </div>
 
-        <!-- Links -->
         <div>
-          <h3 class="text-sm font-semibold text-gray-300 mb-3">Project</h3>
+          <h3 class="text-sm font-semibold text-gray-300 mb-3">{{ t('footer.project') }}</h3>
           <ul class="space-y-2">
             <li>
               <a href="https://github.com/imurodl/kstream" target="_blank" rel="noopener" class="text-sm text-gray-500 hover:text-purple-400 transition-colors">
-                Source Code
+                {{ t('footer.sourceCode') }}
               </a>
             </li>
             <li>
               <a href="https://github.com/imurodl/kstream#tech-stack" target="_blank" rel="noopener" class="text-sm text-gray-500 hover:text-purple-400 transition-colors">
-                Tech Stack
+                {{ t('footer.techStack') }}
               </a>
             </li>
           </ul>
         </div>
 
-        <!-- Author -->
         <div>
-          <h3 class="text-sm font-semibold text-gray-300 mb-3">Author</h3>
+          <h3 class="text-sm font-semibold text-gray-300 mb-3">{{ t('footer.author') }}</h3>
           <ul class="space-y-2">
             <li>
               <a href="https://imurodl.me" target="_blank" rel="noopener" class="text-sm text-gray-500 hover:text-purple-400 transition-colors">
@@ -49,9 +49,8 @@
         </div>
       </div>
 
-      <!-- Bottom -->
       <div class="mt-8 pt-6 border-t border-gray-800 text-center sm:text-left">
-        <p class="text-xs text-gray-600">&copy; {{ new Date().getFullYear() }} KStream. Portfolio demo project.</p>
+        <p class="text-xs text-gray-600">{{ t('footer.copyright', { year: new Date().getFullYear() }) }}</p>
       </div>
     </div>
   </footer>

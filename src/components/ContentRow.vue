@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Show } from '../types'
 import ContentCard from './ContentCard.vue'
 import SkeletonCard from './SkeletonCard.vue'
+
+const { t } = useI18n()
 
 defineProps<{
   title: string
@@ -30,7 +33,7 @@ function scroll(direction: 'left' | 'right') {
         <button
           @click="scroll('left')"
           class="p-1.5 rounded-full bg-gray-800/60 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-          aria-label="Scroll left"
+          :aria-label="t('content.scrollLeft')"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -39,7 +42,7 @@ function scroll(direction: 'left' | 'right') {
         <button
           @click="scroll('right')"
           class="p-1.5 rounded-full bg-gray-800/60 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-          aria-label="Scroll right"
+          :aria-label="t('content.scrollRight')"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />

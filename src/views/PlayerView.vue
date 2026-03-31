@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import type { ShowDetail, Episode } from '../types'
 import { getTVShow, getSeasonEpisodes, backdropUrl } from '../services/tmdb'
 import { getStreamForEpisode, getSubtitleTracks } from '../data/streams'
@@ -8,6 +9,7 @@ import { useWatchlistStore } from '../stores/watchlist'
 import VideoPlayer from '../components/VideoPlayer.vue'
 import EpisodeCard from '../components/EpisodeCard.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const watchlistStore = useWatchlistStore()
@@ -40,7 +42,6 @@ const streamUrl = computed(() => {
 })
 
 const posterImage = computed(() => show.value ? backdropUrl(show.value.backdrop_path) : '')
-
 const subtitles = getSubtitleTracks()
 
 const savedProgress = computed(() => {
@@ -97,7 +98,6 @@ onMounted(async () => {
 
 <template>
   <div>
-    <!-- Loading -->
     <div v-if="loading" class="animate-pulse">
       <div class="w-full aspect-video bg-gray-900 max-h-[75vh]" />
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-3">
@@ -107,7 +107,6 @@ onMounted(async () => {
     </div>
 
     <template v-else>
-      <!-- Video Player -->
       <div class="w-full max-h-[75vh] bg-black">
         <VideoPlayer
           v-if="streamUrl"
@@ -121,12 +120,9 @@ onMounted(async () => {
         />
       </div>
 
-      <!-- Content below player -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div class="flex flex-col lg:flex-row gap-8">
-          <!-- Episode info -->
           <div class="flex-1">
-            <!-- Navigation -->
             <div class="flex items-center justify-between mb-4">
               <button
                 v-if="prevEpisode"
@@ -136,7 +132,7 @@ onMounted(async () => {
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
-                Previous
+                {{ t('player.previous') }}
               </button>
               <span v-else />
               <button
@@ -144,18 +140,17 @@ onMounted(async () => {
                 @click="navigateEpisode(nextEpisode)"
                 class="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors"
               >
-                Next
+                {{ t('player.next') }}
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
               </button>
             </div>
 
-            <!-- Current episode details -->
             <div v-if="currentEpisode">
               <div class="flex items-center gap-2 mb-1">
                 <span class="text-sm text-purple-400 font-medium">
-                  Episode {{ currentEpisode.episode_number }}
+                  {{ t('player.episode', { n: currentEpisode.episode_number }) }}
                 </span>
                 <span v-if="currentEpisode.air_date" class="text-xs text-gray-500">
                   {{ currentEpisode.air_date }}
@@ -173,21 +168,19 @@ onMounted(async () => {
               </p>
             </div>
 
-            <!-- Keyboard shortcuts hint -->
             <div class="mt-6 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-              <h3 class="text-sm font-medium text-gray-300 mb-2">Keyboard Shortcuts</h3>
+              <h3 class="text-sm font-medium text-gray-300 mb-2">{{ t('player.shortcuts') }}</h3>
               <div class="grid grid-cols-2 gap-2 text-xs text-gray-500">
-                <span><kbd class="px-1.5 py-0.5 bg-gray-800 rounded text-gray-400">Space</kbd> Play/Pause</span>
-                <span><kbd class="px-1.5 py-0.5 bg-gray-800 rounded text-gray-400">←</kbd> <kbd class="px-1.5 py-0.5 bg-gray-800 rounded text-gray-400">→</kbd> Seek ±10s</span>
-                <span><kbd class="px-1.5 py-0.5 bg-gray-800 rounded text-gray-400">F</kbd> Fullscreen</span>
-                <span><kbd class="px-1.5 py-0.5 bg-gray-800 rounded text-gray-400">M</kbd> Mute</span>
+                <span><kbd class="px-1.5 py-0.5 bg-gray-800 rounded text-gray-400">Space</kbd> {{ t('player.playPause') }}</span>
+                <span><kbd class="px-1.5 py-0.5 bg-gray-800 rounded text-gray-400">←</kbd> <kbd class="px-1.5 py-0.5 bg-gray-800 rounded text-gray-400">→</kbd> {{ t('player.seek') }}</span>
+                <span><kbd class="px-1.5 py-0.5 bg-gray-800 rounded text-gray-400">F</kbd> {{ t('player.fullscreen') }}</span>
+                <span><kbd class="px-1.5 py-0.5 bg-gray-800 rounded text-gray-400">M</kbd> {{ t('player.mute') }}</span>
               </div>
             </div>
           </div>
 
-          <!-- Episode sidebar -->
           <div v-if="episodes.length > 1" class="lg:w-96 flex-shrink-0">
-            <h2 class="text-lg font-semibold text-white mb-3">Episodes</h2>
+            <h2 class="text-lg font-semibold text-white mb-3">{{ t('player.episodes') }}</h2>
             <div class="space-y-1 max-h-[600px] overflow-y-auto pr-1">
               <div
                 v-for="ep in episodes"

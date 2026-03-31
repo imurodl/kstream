@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import type { ShowDetail, Episode } from '../types'
 import { getTVShow, getSeasonEpisodes, backdropUrl, posterUrl } from '../services/tmdb'
 import { useWatchlistStore } from '../stores/watchlist'
 import EpisodeCard from '../components/EpisodeCard.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const watchlistStore = useWatchlistStore()
 
@@ -63,7 +65,7 @@ onMounted(async () => {
     }
     await loadEpisodes(selectedSeason.value)
   } catch (e) {
-    error.value = 'Failed to load show details.'
+    error.value = t('detail.errorLoad')
   } finally {
     loading.value = false
   }
@@ -126,7 +128,7 @@ onMounted(async () => {
               </span>
               <span>{{ year }}</span>
               <span v-if="networkNames">{{ networkNames }}</span>
-              <span>{{ show.number_of_seasons }} season{{ show.number_of_seasons !== 1 ? 's' : '' }}</span>
+              <span>{{ show.number_of_seasons }} {{ t('detail.season') }}</span>
               <span>{{ show.status }}</span>
             </div>
 
@@ -145,7 +147,7 @@ onMounted(async () => {
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
                 </svg>
-                Watch Now
+                {{ t('detail.watchNow') }}
               </RouterLink>
               <button
                 @click="toggleWatchlist"
@@ -158,7 +160,7 @@ onMounted(async () => {
                   <path v-if="inWatchlist" stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                   <path v-else stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
-                {{ inWatchlist ? 'In Watchlist' : 'Watchlist' }}
+                {{ inWatchlist ? t('detail.inWatchlist') : t('detail.addWatchlist') }}
               </button>
             </div>
           </div>
@@ -168,7 +170,7 @@ onMounted(async () => {
       <!-- Episodes section -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div class="flex items-center justify-between mb-6">
-          <h2 class="text-xl font-semibold text-white">Episodes</h2>
+          <h2 class="text-xl font-semibold text-white">{{ t('detail.episodes') }}</h2>
           <select
             v-if="show.seasons && show.seasons.length > 1"
             v-model="selectedSeason"
@@ -206,7 +208,7 @@ onMounted(async () => {
           />
         </div>
 
-        <p v-else class="text-gray-500 text-center py-8">No episodes available for this season.</p>
+        <p v-else class="text-gray-500 text-center py-8">{{ t('detail.noEpisodes') }}</p>
       </div>
     </template>
   </div>

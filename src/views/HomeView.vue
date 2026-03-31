@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Show } from '../types'
 import { discoverKoreanTV } from '../services/tmdb'
 import { useWatchlistStore } from '../stores/watchlist'
@@ -7,6 +8,7 @@ import HeroSection from '../components/HeroSection.vue'
 import ContentRow from '../components/ContentRow.vue'
 import ContinueWatchingCard from '../components/ContinueWatchingCard.vue'
 
+const { t } = useI18n()
 const watchlistStore = useWatchlistStore()
 const continueWatching = computed(() => watchlistStore.getContinueWatching())
 
@@ -35,7 +37,7 @@ onMounted(async () => {
     comedy.value = withPoster(comedyRes.results)
     newReleases.value = withPoster(newRes.results)
   } catch (e) {
-    error.value = 'Failed to load content. Please check your API key.'
+    error.value = t('home.errorLoad')
   } finally {
     loading.value = false
   }
@@ -44,22 +46,19 @@ onMounted(async () => {
 
 <template>
   <div>
-    <!-- Error state -->
     <div v-if="error" class="flex items-center justify-center min-h-[60vh] px-4">
       <div class="text-center">
         <p class="text-red-400 text-lg mb-2">{{ error }}</p>
-        <p class="text-gray-500 text-sm">Make sure VITE_TMDB_ACCESS_TOKEN is set in your .env file.</p>
+        <p class="text-gray-500 text-sm">{{ t('home.errorHint') }}</p>
       </div>
     </div>
 
     <template v-else>
-      <!-- Hero -->
       <div v-if="loading" class="w-full h-[70vh] min-h-[400px] max-h-[700px] bg-gray-900 animate-pulse" />
       <HeroSection v-else-if="heroShow" :show="heroShow" />
 
-      <!-- Continue Watching -->
       <section v-if="continueWatching.length" class="mt-6 mb-8">
-        <h2 class="text-lg sm:text-xl font-semibold text-white mb-3 px-4 sm:px-6 lg:px-8">Continue Watching</h2>
+        <h2 class="text-lg sm:text-xl font-semibold text-white mb-3 px-4 sm:px-6 lg:px-8">{{ t('home.continueWatching') }}</h2>
         <div class="flex gap-3 overflow-x-auto px-4 sm:px-6 lg:px-8 pb-2 scrollbar-hide">
           <ContinueWatchingCard
             v-for="item in continueWatching"
@@ -69,12 +68,11 @@ onMounted(async () => {
         </div>
       </section>
 
-      <!-- Content rows -->
       <div class="mt-6 space-y-2">
-        <ContentRow title="Trending Now" :shows="trending" :loading="loading" />
-        <ContentRow title="Top Dramas" :shows="dramas" :loading="loading" />
-        <ContentRow title="Comedy" :shows="comedy" :loading="loading" />
-        <ContentRow title="New Releases" :shows="newReleases" :loading="loading" />
+        <ContentRow :title="t('home.trending')" :shows="trending" :loading="loading" />
+        <ContentRow :title="t('home.topDramas')" :shows="dramas" :loading="loading" />
+        <ContentRow :title="t('home.comedy')" :shows="comedy" :loading="loading" />
+        <ContentRow :title="t('home.newReleases')" :shows="newReleases" :loading="loading" />
       </div>
     </template>
   </div>
