@@ -2,6 +2,8 @@
 
 A Korean drama streaming platform built with **Vue 3**, **TypeScript**, and **Video.js**. Features real show data from TMDB, HLS video playback with subtitle support, and a responsive Netflix-style dark UI.
 
+**[Live Demo](https://stream.imurodl.me)** | **[한국어](./README.ko.md)**
+
 ## Tech Stack
 
 - **Vue 3** — Composition API with `<script setup lang="ts">`
@@ -34,7 +36,7 @@ A Korean drama streaming platform built with **Vue 3**, **TypeScript**, and **Vi
 ### Setup
 
 ```bash
-git clone https://github.com/your-username/kstream.git
+git clone https://github.com/imurodl/kstream.git
 cd kstream
 npm install
 ```
