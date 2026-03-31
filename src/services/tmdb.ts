@@ -1,7 +1,7 @@
 import type { Show, ShowDetail, Episode, Genre, TMDBResponse } from '../types'
 
 const BASE_URL = 'https://api.themoviedb.org/3'
-const API_KEY = import.meta.env.VITE_TMDB_API_KEY
+const ACCESS_TOKEN = import.meta.env.VITE_TMDB_ACCESS_TOKEN
 
 export const IMAGE_BASE = 'https://image.tmdb.org/t/p'
 
@@ -17,12 +17,16 @@ export function backdropUrl(path: string | null, size = 'w1280'): string {
 
 async function fetchTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
   const url = new URL(`${BASE_URL}${endpoint}`)
-  url.searchParams.set('api_key', API_KEY)
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value)
   }
 
-  const res = await fetch(url.toString())
+  const res = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Bearer ${ACCESS_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+  })
   if (!res.ok) throw new Error(`TMDB API error: ${res.status}`)
   return res.json()
 }
