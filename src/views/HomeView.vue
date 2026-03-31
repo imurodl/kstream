@@ -27,11 +27,13 @@ onMounted(async () => {
       discoverKoreanTV({ sortBy: 'first_air_date.desc' }),
     ])
 
-    trending.value = trendingRes.results
-    heroShow.value = trendingRes.results[0] || null
-    dramas.value = dramaRes.results
-    comedy.value = comedyRes.results
-    newReleases.value = newRes.results
+    const withPoster = (shows: Show[]) => shows.filter(s => s.poster_path)
+
+    trending.value = withPoster(trendingRes.results)
+    heroShow.value = trendingRes.results.find(s => s.backdrop_path) || null
+    dramas.value = withPoster(dramaRes.results)
+    comedy.value = withPoster(comedyRes.results)
+    newReleases.value = withPoster(newRes.results)
   } catch (e) {
     error.value = 'Failed to load content. Please check your API key.'
   } finally {
