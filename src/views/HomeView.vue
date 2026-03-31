@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { Show } from '../types'
 import { getTrending, discoverKoreanTV } from '../services/tmdb'
+import { useWatchlistStore } from '../stores/watchlist'
 import HeroSection from '../components/HeroSection.vue'
 import ContentRow from '../components/ContentRow.vue'
+import ContinueWatchingCard from '../components/ContinueWatchingCard.vue'
+
+const watchlistStore = useWatchlistStore()
+const continueWatching = computed(() => watchlistStore.getContinueWatching())
 
 const heroShow = ref<Show | null>(null)
 const trending = ref<Show[]>([])
@@ -50,6 +55,18 @@ onMounted(async () => {
       <!-- Hero -->
       <div v-if="loading" class="w-full h-[70vh] min-h-[400px] max-h-[700px] bg-gray-900 animate-pulse" />
       <HeroSection v-else-if="heroShow" :show="heroShow" />
+
+      <!-- Continue Watching -->
+      <section v-if="continueWatching.length" class="mt-6 mb-8">
+        <h2 class="text-lg sm:text-xl font-semibold text-white mb-3 px-4 sm:px-6 lg:px-8">Continue Watching</h2>
+        <div class="flex gap-3 overflow-x-auto px-4 sm:px-6 lg:px-8 pb-2 scrollbar-hide">
+          <ContinueWatchingCard
+            v-for="item in continueWatching"
+            :key="`${item.showId}-${item.episodeId}`"
+            :item="item"
+          />
+        </div>
+      </section>
 
       <!-- Content rows -->
       <div class="mt-6 space-y-2">

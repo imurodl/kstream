@@ -57,6 +57,9 @@ function onTimeUpdate(currentTime: number, duration: number) {
     currentTime,
     duration,
     updatedAt: Date.now(),
+    showName: show.value?.name,
+    posterPath: show.value?.poster_path,
+    episodeName: currentEpisode.value.name,
   })
 }
 

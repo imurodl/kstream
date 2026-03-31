@@ -78,4 +78,7 @@ export interface PlaybackProgress {
   currentTime: number
   duration: number
   updatedAt: number
+  showName?: string
+  posterPath?: string | null
+  episodeName?: string
 }
