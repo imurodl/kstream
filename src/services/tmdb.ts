@@ -1,4 +1,4 @@
-import type { Show, ShowDetail, Episode, Genre, TMDBResponse } from '../types'
+import type { Show, ShowDetail, Episode, Genre, TMDBResponse, CastMember, CrewMember, PersonDetail, PersonCredit } from '../types'
 
 const BASE_URL = 'https://api.themoviedb.org/3'
 const ACCESS_TOKEN = import.meta.env.VITE_TMDB_ACCESS_TOKEN
@@ -12,6 +12,11 @@ export function posterUrl(path: string | null, size = 'w500'): string {
 
 export function backdropUrl(path: string | null, size = 'w1280'): string {
   if (!path) return '/placeholder-backdrop.svg'
+  return `${IMAGE_BASE}/${size}${path}`
+}
+
+export function profileUrl(path: string | null, size = 'w185'): string {
+  if (!path) return ''
   return `${IMAGE_BASE}/${size}${path}`
 }
 
@@ -77,4 +82,20 @@ export async function getTrending(): Promise<TMDBResponse<Show>> {
   return fetchTMDB<TMDBResponse<Show>>('/trending/tv/week', {
     with_original_language: 'ko',
   })
+}
+
+export async function getShowCredits(id: number): Promise<{ cast: CastMember[]; crew: CrewMember[] }> {
+  return fetchTMDB<{ cast: CastMember[]; crew: CrewMember[] }>(`/tv/${id}/credits`)
+}
+
+export async function getRecommendations(id: number): Promise<TMDBResponse<Show>> {
+  return fetchTMDB<TMDBResponse<Show>>(`/tv/${id}/recommendations`)
+}
+
+export async function getPersonDetail(id: number): Promise<PersonDetail> {
+  return fetchTMDB<PersonDetail>(`/person/${id}`)
+}
+
+export async function getPersonTVCredits(id: number): Promise<{ cast: PersonCredit[] }> {
+  return fetchTMDB<{ cast: PersonCredit[] }>(`/person/${id}/tv_credits`)
 }

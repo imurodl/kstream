@@ -45,6 +45,14 @@ export default {
     noEpisodes: '이 시즌에 사용 가능한 에피소드가 없습니다.',
     errorLoad: '프로그램 정보를 불러오지 못했습니다.',
     season: '시즌',
+    cast: '출연진',
+    relatedShows: '추천 프로그램',
+  },
+  person: {
+    filmography: '필모그래피',
+    knownAs: '다른 이름',
+    born: '출생',
+    noShows: '프로그램을 찾을 수 없습니다.',
   },
   player: {
     previous: '이전',

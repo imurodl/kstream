@@ -45,6 +45,14 @@ export default {
     noEpisodes: 'No episodes available for this season.',
     errorLoad: 'Failed to load show details.',
     season: 'season | seasons',
+    cast: 'Cast',
+    relatedShows: 'You May Also Like',
+  },
+  person: {
+    filmography: 'Filmography',
+    knownAs: 'Also known as',
+    born: 'Born',
+    noShows: 'No shows found.',
   },
   player: {
     previous: 'Previous',

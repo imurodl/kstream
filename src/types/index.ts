@@ -72,6 +72,43 @@ export interface WatchlistItem {
   addedAt: number
 }
 
+export interface CastMember {
+  id: number
+  name: string
+  character: string
+  profile_path: string | null
+  order: number
+}
+
+export interface CrewMember {
+  id: number
+  name: string
+  job: string
+  department: string
+  profile_path: string | null
+}
+
+export interface PersonDetail {
+  id: number
+  name: string
+  biography: string
+  birthday: string | null
+  place_of_birth: string | null
+  profile_path: string | null
+  also_known_as: string[]
+}
+
+export interface PersonCredit {
+  id: number
+  name: string
+  character: string
+  episode_count: number
+  poster_path: string | null
+  first_air_date: string
+  vote_average: number
+  popularity: number
+}
+
 export interface PlaybackProgress {
   showId: number
   episodeId: number

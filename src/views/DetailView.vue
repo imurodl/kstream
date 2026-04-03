@@ -2,10 +2,12 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import type { ShowDetail, Episode } from '../types'
-import { getTVShow, getSeasonEpisodes, backdropUrl, posterUrl } from '../services/tmdb'
+import type { ShowDetail, Episode, CastMember, Show } from '../types'
+import { getTVShow, getSeasonEpisodes, getShowCredits, getRecommendations, backdropUrl, posterUrl } from '../services/tmdb'
 import { useWatchlistStore } from '../stores/watchlist'
 import EpisodeCard from '../components/EpisodeCard.vue'
+import CastCard from '../components/CastCard.vue'
+import ContentCard from '../components/ContentCard.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -13,6 +15,8 @@ const watchlistStore = useWatchlistStore()
 
 const show = ref<ShowDetail | null>(null)
 const episodes = ref<Episode[]>([])
+const cast = ref<CastMember[]>([])
+const relatedShows = ref<Show[]>([])
 const selectedSeason = ref(1)
 const loading = ref(true)
 const episodesLoading = ref(false)
@@ -64,6 +68,14 @@ onMounted(async () => {
       selectedSeason.value = firstReal.season_number
     }
     await loadEpisodes(selectedSeason.value)
+
+    // Fetch cast and recommendations in parallel
+    const [creditsRes, recsRes] = await Promise.all([
+      getShowCredits(showId.value).catch(() => ({ cast: [] })),
+      getRecommendations(showId.value).catch(() => ({ results: [] })),
+    ])
+    cast.value = creditsRes.cast.slice(0, 20)
+    relatedShows.value = recsRes.results.filter((s: Show) => s.poster_path).slice(0, 12)
   } catch (e) {
     error.value = t('detail.errorLoad')
   } finally {
@@ -164,6 +176,26 @@ onMounted(async () => {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Cast section -->
+      <div v-if="cast.length" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+        <h2 class="text-xl font-semibold text-white mb-4">{{ t('detail.cast') }}</h2>
+        <div class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          <CastCard v-for="member in cast" :key="member.id" :cast="member" />
+        </div>
+      </div>
+
+      <!-- Related Shows -->
+      <div v-if="relatedShows.length" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <h2 class="text-xl font-semibold text-white mb-4">{{ t('detail.relatedShows') }}</h2>
+        <div class="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+          <ContentCard
+            v-for="s in relatedShows"
+            :key="s.id"
+            :show="s"
+          />
         </div>
       </div>
 
