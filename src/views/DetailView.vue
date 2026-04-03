@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import type { ShowDetail, Episode, CastMember, Show } from '../types'
 import { getTVShow, getSeasonEpisodes, getShowCredits, getRecommendations, getShowVideos, getTrailerKey, backdropUrl, posterUrl } from '../services/tmdb'
 import { useWatchlistStore } from '../stores/watchlist'
+import { useDragScroll } from '../composables/useDragScroll'
 import EpisodeCard from '../components/EpisodeCard.vue'
 import CastCard from '../components/CastCard.vue'
 import ContentCard from '../components/ContentCard.vue'
@@ -19,6 +20,10 @@ const episodes = ref<Episode[]>([])
 const cast = ref<CastMember[]>([])
 const relatedShows = ref<Show[]>([])
 const trailerKey = ref<string | null>(null)
+const castScrollRef = ref<HTMLElement | null>(null)
+const relatedScrollRef = ref<HTMLElement | null>(null)
+useDragScroll(castScrollRef)
+useDragScroll(relatedScrollRef)
 const selectedSeason = ref(1)
 const loading = ref(true)
 const episodesLoading = ref(false)
@@ -194,7 +199,7 @@ onMounted(async () => {
       <!-- Cast section -->
       <div v-if="cast.length" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
         <h2 class="text-xl font-semibold text-white mb-4">{{ t('detail.cast') }}</h2>
-        <div class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+        <div ref="castScrollRef" class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
           <CastCard v-for="member in cast" :key="member.id" :cast="member" />
         </div>
       </div>
@@ -202,7 +207,7 @@ onMounted(async () => {
       <!-- Related Shows -->
       <div v-if="relatedShows.length" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <h2 class="text-xl font-semibold text-white mb-4">{{ t('detail.relatedShows') }}</h2>
-        <div class="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+        <div ref="relatedScrollRef" class="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
           <ContentCard
             v-for="s in relatedShows"
             :key="s.id"

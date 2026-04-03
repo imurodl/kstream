@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Show } from '../types'
+import { useDragScroll } from '../composables/useDragScroll'
 import ContentCard from './ContentCard.vue'
 import SkeletonCard from './SkeletonCard.vue'
 
@@ -14,6 +15,7 @@ defineProps<{
 }>()
 
 const scrollContainer = ref<HTMLElement | null>(null)
+useDragScroll(scrollContainer)
 
 function scroll(direction: 'left' | 'right') {
   if (!scrollContainer.value) return
