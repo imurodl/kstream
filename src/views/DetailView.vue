@@ -67,7 +67,15 @@ async function loadEpisodes(seasonNumber: number) {
 
 watch(selectedSeason, (s) => loadEpisodes(s))
 
-onMounted(async () => {
+async function loadShow() {
+  loading.value = true
+  error.value = ''
+  show.value = null
+  episodes.value = []
+  cast.value = []
+  relatedShows.value = []
+  trailerKey.value = null
+
   try {
     show.value = await getTVShow(showId.value)
     if (show.value.seasons?.length) {
@@ -76,21 +84,23 @@ onMounted(async () => {
     }
     await loadEpisodes(selectedSeason.value)
 
-    // Fetch cast, recommendations, and videos in parallel
     const [creditsRes, recsRes, videosRes] = await Promise.all([
       getShowCredits(showId.value).catch(() => ({ cast: [] })),
       getRecommendations(showId.value).catch(() => ({ results: [] })),
       getShowVideos(showId.value).catch(() => ({ results: [] })),
     ])
     cast.value = creditsRes.cast.slice(0, 20)
-    relatedShows.value = recsRes.results.filter((s: Show) => s.poster_path).slice(0, 12)
+    relatedShows.value = recsRes.results.filter((s: Show) => s.poster_path && s.original_language === 'ko').slice(0, 12)
     trailerKey.value = getTrailerKey(videosRes.results)
   } catch (e) {
     error.value = t('detail.errorLoad')
   } finally {
     loading.value = false
   }
-})
+}
+
+watch(showId, () => loadShow())
+onMounted(() => loadShow())
 </script>
 
 <template>
