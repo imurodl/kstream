@@ -90,7 +90,7 @@ async function loadShow() {
       getShowVideos(showId.value).catch(() => ({ results: [] })),
     ])
     cast.value = creditsRes.cast.slice(0, 20)
-    relatedShows.value = recsRes.results.filter((s: Show) => s.poster_path && s.original_language === 'ko').slice(0, 12)
+    relatedShows.value = recsRes.results.filter((s: Show) => s.poster_path && s.origin_country?.includes('KR')).slice(0, 12)
     trailerKey.value = getTrailerKey(videosRes.results)
   } catch (e) {
     error.value = t('detail.errorLoad')

@@ -22,7 +22,7 @@ const bioTruncated = computed(() => {
 
 const showsAsCards = computed(() =>
   credits.value
-    .filter(c => c.poster_path)
+    .filter(c => c.poster_path && c.origin_country?.includes('KR'))
     .sort((a, b) => b.popularity - a.popularity)
     .map(c => ({
       id: c.id,

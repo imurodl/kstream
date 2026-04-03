@@ -99,7 +99,7 @@ onMounted(async () => {
     </h1>
 
     <div v-if="!isSearching" class="space-y-4 mb-8">
-      <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+      <div class="flex flex-wrap gap-2 gap-y-3">
         <FilterChip :label="t('browse.all')" :active="selectedGenre === ''" @click="selectedGenre = ''" />
         <FilterChip
           v-for="genre in genres"

@@ -116,6 +116,8 @@ export interface PersonCredit {
   first_air_date: string
   vote_average: number
   popularity: number
+  origin_country: string[]
+  original_language: string
 }
 
 export interface PlaybackProgress {
