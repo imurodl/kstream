@@ -3,11 +3,12 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import type { ShowDetail, Episode, CastMember, Show } from '../types'
-import { getTVShow, getSeasonEpisodes, getShowCredits, getRecommendations, backdropUrl, posterUrl } from '../services/tmdb'
+import { getTVShow, getSeasonEpisodes, getShowCredits, getRecommendations, getShowVideos, getTrailerKey, backdropUrl, posterUrl } from '../services/tmdb'
 import { useWatchlistStore } from '../stores/watchlist'
 import EpisodeCard from '../components/EpisodeCard.vue'
 import CastCard from '../components/CastCard.vue'
 import ContentCard from '../components/ContentCard.vue'
+import TrailerEmbed from '../components/TrailerEmbed.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -17,6 +18,7 @@ const show = ref<ShowDetail | null>(null)
 const episodes = ref<Episode[]>([])
 const cast = ref<CastMember[]>([])
 const relatedShows = ref<Show[]>([])
+const trailerKey = ref<string | null>(null)
 const selectedSeason = ref(1)
 const loading = ref(true)
 const episodesLoading = ref(false)
@@ -69,13 +71,15 @@ onMounted(async () => {
     }
     await loadEpisodes(selectedSeason.value)
 
-    // Fetch cast and recommendations in parallel
-    const [creditsRes, recsRes] = await Promise.all([
+    // Fetch cast, recommendations, and videos in parallel
+    const [creditsRes, recsRes, videosRes] = await Promise.all([
       getShowCredits(showId.value).catch(() => ({ cast: [] })),
       getRecommendations(showId.value).catch(() => ({ results: [] })),
+      getShowVideos(showId.value).catch(() => ({ results: [] })),
     ])
     cast.value = creditsRes.cast.slice(0, 20)
     relatedShows.value = recsRes.results.filter((s: Show) => s.poster_path).slice(0, 12)
+    trailerKey.value = getTrailerKey(videosRes.results)
   } catch (e) {
     error.value = t('detail.errorLoad')
   } finally {
@@ -176,6 +180,14 @@ onMounted(async () => {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Trailer -->
+      <div v-if="trailerKey" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+        <h2 class="text-xl font-semibold text-white mb-4">{{ t('detail.trailer') }}</h2>
+        <div class="max-w-3xl">
+          <TrailerEmbed :youtube-key="trailerKey" />
         </div>
       </div>
 

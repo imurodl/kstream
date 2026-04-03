@@ -47,6 +47,7 @@ export default {
     season: 'season | seasons',
     cast: 'Cast',
     relatedShows: 'You May Also Like',
+    trailer: 'Trailer',
   },
   person: {
     filmography: 'Filmography',

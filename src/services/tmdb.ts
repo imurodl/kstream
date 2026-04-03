@@ -1,4 +1,4 @@
-import type { Show, ShowDetail, Episode, Genre, TMDBResponse, CastMember, CrewMember, PersonDetail, PersonCredit } from '../types'
+import type { Show, ShowDetail, Episode, Genre, TMDBResponse, CastMember, CrewMember, PersonDetail, PersonCredit, VideoResult } from '../types'
 
 const BASE_URL = 'https://api.themoviedb.org/3'
 const ACCESS_TOKEN = import.meta.env.VITE_TMDB_ACCESS_TOKEN
@@ -98,4 +98,16 @@ export async function getPersonDetail(id: number): Promise<PersonDetail> {
 
 export async function getPersonTVCredits(id: number): Promise<{ cast: PersonCredit[] }> {
   return fetchTMDB<{ cast: PersonCredit[] }>(`/person/${id}/tv_credits`)
+}
+
+export async function getShowVideos(id: number): Promise<{ results: VideoResult[] }> {
+  return fetchTMDB<{ results: VideoResult[] }>(`/tv/${id}/videos`)
+}
+
+export function getTrailerKey(videos: VideoResult[]): string | null {
+  const trailer = videos.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.official)
+    || videos.find(v => v.site === 'YouTube' && v.type === 'Trailer')
+    || videos.find(v => v.site === 'YouTube' && v.type === 'Teaser')
+    || videos.find(v => v.site === 'YouTube')
+  return trailer?.key || null
 }

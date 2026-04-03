@@ -47,6 +47,7 @@ export default {
     season: '시즌',
     cast: '출연진',
     relatedShows: '추천 프로그램',
+    trailer: '예고편',
   },
   person: {
     filmography: '필모그래피',

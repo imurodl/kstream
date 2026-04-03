@@ -72,6 +72,15 @@ export interface WatchlistItem {
   addedAt: number
 }
 
+export interface VideoResult {
+  id: string
+  key: string
+  name: string
+  site: string
+  type: string
+  official: boolean
+}
+
 export interface CastMember {
   id: number
   name: string
