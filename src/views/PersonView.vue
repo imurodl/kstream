@@ -2,15 +2,15 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import type { PersonDetail, PersonCredit } from '../types'
-import { getPersonDetail, getPersonTVCredits, profileUrl } from '../services/tmdb'
+import type { PersonDetail, ContentItem } from '../types'
+import { getPersonDetail, getPersonFilmographyKR, profileUrl } from '../services/tmdb'
 import ContentCard from '../components/ContentCard.vue'
 
 const { t } = useI18n()
 const route = useRoute()
 
 const person = ref<PersonDetail | null>(null)
-const credits = ref<PersonCredit[]>([])
+const showsAsCards = ref<ContentItem[]>([])
 const loading = ref(true)
 
 const personId = computed(() => Number(route.params.id))
@@ -20,35 +20,14 @@ const bioTruncated = computed(() => {
   return text.length > 500 ? text.slice(0, 500) + '...' : text
 })
 
-const showsAsCards = computed(() =>
-  credits.value
-    .filter(c => c.poster_path && c.origin_country?.includes('KR'))
-    .sort((a, b) => b.popularity - a.popularity)
-    .map(c => ({
-      id: c.id,
-      name: c.name,
-      original_name: c.name,
-      overview: '',
-      poster_path: c.poster_path,
-      backdrop_path: null,
-      vote_average: c.vote_average,
-      vote_count: 0,
-      first_air_date: c.first_air_date,
-      genre_ids: [],
-      origin_country: [],
-      original_language: 'ko',
-      popularity: c.popularity,
-    }))
-)
-
 onMounted(async () => {
   try {
-    const [personRes, creditsRes] = await Promise.all([
+    const [personRes, filmography] = await Promise.all([
       getPersonDetail(personId.value),
-      getPersonTVCredits(personId.value),
+      getPersonFilmographyKR(personId.value),
     ])
     person.value = personRes
-    credits.value = creditsRes.cast
+    showsAsCards.value = filmography
   } catch (e) {
     // failed to load
   } finally {
@@ -122,7 +101,7 @@ onMounted(async () => {
           <ContentCard
             v-for="show in showsAsCards"
             :key="show.id"
-            :show="show"
+            :item="show"
             class="!w-full"
           />
         </div>

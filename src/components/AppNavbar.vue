@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useScrolled } from '../composables/useScrolled'
 import SearchBar from './SearchBar.vue'
 import MobileMenu from './MobileMenu.vue'
+import CategorySwitcher from './CategorySwitcher.vue'
 
 const { t, locale } = useI18n()
 const { isScrolled } = useScrolled()
@@ -48,6 +49,8 @@ function toggleLocale() {
 
       <!-- Right side -->
       <div class="flex items-center gap-2">
+        <CategorySwitcher />
+
         <!-- Locale toggle -->
         <button
           @click="toggleLocale"

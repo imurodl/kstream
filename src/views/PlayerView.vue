@@ -2,10 +2,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import type { ShowDetail, Episode } from '../types'
-import { getTVShow, getSeasonEpisodes, backdropUrl } from '../services/tmdb'
+import type { ShowDetail, MovieDetail, Episode, MediaType } from '../types'
+import { getDetail, getSeasonEpisodes, backdropUrl } from '../services/tmdb'
 import { getStreamForEpisode, getSubtitleTracks } from '../data/streams'
 import { useWatchlistStore } from '../stores/watchlist'
+import { getTitle } from '../utils/content'
 import VideoPlayer from '../components/VideoPlayer.vue'
 import EpisodeCard from '../components/EpisodeCard.vue'
 
@@ -14,14 +15,20 @@ const route = useRoute()
 const router = useRouter()
 const watchlistStore = useWatchlistStore()
 
-const show = ref<ShowDetail | null>(null)
+const detail = ref<ShowDetail | MovieDetail | null>(null)
 const episodes = ref<Episode[]>([])
 const loading = ref(true)
 
-const showId = computed(() => Number(route.params.showId))
+const mediaType = computed<MediaType>(() => (route.params.type as MediaType) || 'tv')
+const isMovie = computed(() => mediaType.value === 'movie')
+const itemId = computed(() => Number(route.params.id))
 const episodeId = computed(() => route.params.episodeId ? Number(route.params.episodeId) : null)
 
+const movieDetail = computed(() => isMovie.value ? (detail.value as MovieDetail | null) : null)
+const title = computed(() => detail.value ? getTitle(detail.value) : '')
+
 const currentEpisode = computed(() => {
+  if (isMovie.value) return null
   if (episodeId.value) {
     return episodes.value.find(ep => ep.id === episodeId.value) || episodes.value[0] || null
   }
@@ -37,38 +44,59 @@ const prevEpisode = computed(() => currentIndex.value > 0 ? episodes.value[curre
 const nextEpisode = computed(() => currentIndex.value < episodes.value.length - 1 ? episodes.value[currentIndex.value + 1] : null)
 
 const streamUrl = computed(() => {
+  if (isMovie.value) {
+    return getStreamForEpisode(itemId.value, itemId.value)
+  }
   if (!currentEpisode.value) return ''
-  return getStreamForEpisode(showId.value, currentEpisode.value.id)
+  return getStreamForEpisode(itemId.value, currentEpisode.value.id)
 })
 
-const posterImage = computed(() => show.value ? backdropUrl(show.value.backdrop_path) : '')
+const posterImage = computed(() => detail.value ? backdropUrl(detail.value.backdrop_path) : '')
 const subtitles = getSubtitleTracks()
 
 const savedProgress = computed(() => {
+  if (isMovie.value) {
+    const p = watchlistStore.getProgress(itemId.value, itemId.value, 'movie')
+    return p?.currentTime || 0
+  }
   if (!currentEpisode.value) return 0
-  const p = watchlistStore.getProgress(showId.value, currentEpisode.value.id)
+  const p = watchlistStore.getProgress(itemId.value, currentEpisode.value.id, 'tv')
   return p?.currentTime || 0
 })
 
 function onTimeUpdate(currentTime: number, duration: number) {
+  if (isMovie.value) {
+    watchlistStore.saveProgress({
+      showId: itemId.value,
+      episodeId: itemId.value,
+      currentTime,
+      duration,
+      updatedAt: Date.now(),
+      showName: title.value,
+      posterPath: detail.value?.poster_path,
+      mediaType: 'movie',
+    })
+    return
+  }
   if (!currentEpisode.value) return
   watchlistStore.saveProgress({
-    showId: showId.value,
+    showId: itemId.value,
     episodeId: currentEpisode.value.id,
     currentTime,
     duration,
     updatedAt: Date.now(),
-    showName: show.value?.name,
-    posterPath: show.value?.poster_path,
+    showName: title.value,
+    posterPath: detail.value?.poster_path,
     episodeName: currentEpisode.value.name,
+    mediaType: 'tv',
   })
 }
 
 function onEnded() {
-  if (nextEpisode.value) {
+  if (!isMovie.value && nextEpisode.value) {
     router.push({
       name: 'player',
-      params: { showId: showId.value, episodeId: nextEpisode.value.id },
+      params: { type: 'tv', id: itemId.value, episodeId: nextEpisode.value.id },
     })
   }
 }
@@ -76,20 +104,23 @@ function onEnded() {
 function navigateEpisode(episode: Episode) {
   router.push({
     name: 'player',
-    params: { showId: showId.value, episodeId: episode.id },
+    params: { type: 'tv', id: itemId.value, episodeId: episode.id },
   })
 }
 
 onMounted(async () => {
   try {
-    show.value = await getTVShow(showId.value)
-    if (show.value.seasons?.length) {
-      const firstReal = show.value.seasons.find(s => s.season_number > 0) || show.value.seasons[0]
-      const res = await getSeasonEpisodes(showId.value, firstReal.season_number)
-      episodes.value = res.episodes
+    detail.value = await getDetail(mediaType.value, itemId.value)
+    if (!isMovie.value) {
+      const tv = detail.value as ShowDetail
+      if (tv.seasons?.length) {
+        const firstReal = tv.seasons.find(s => s.season_number > 0) || tv.seasons[0]
+        const res = await getSeasonEpisodes(itemId.value, firstReal.season_number)
+        episodes.value = res.episodes
+      }
     }
   } catch (e) {
-    // show failed to load
+    // failed to load
   } finally {
     loading.value = false
   }
@@ -123,50 +154,67 @@ onMounted(async () => {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div class="flex flex-col lg:flex-row gap-8">
           <div class="flex-1">
-            <div class="flex items-center justify-between mb-4">
-              <button
-                v-if="prevEpisode"
-                @click="navigateEpisode(prevEpisode)"
-                class="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-                {{ t('player.previous') }}
-              </button>
-              <span v-else />
-              <button
-                v-if="nextEpisode"
-                @click="navigateEpisode(nextEpisode)"
-                class="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                {{ t('player.next') }}
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-
-            <div v-if="currentEpisode">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="text-sm text-purple-400 font-medium">
-                  {{ t('player.episode', { n: currentEpisode.episode_number }) }}
-                </span>
-                <span v-if="currentEpisode.air_date" class="text-xs text-gray-500">
-                  {{ currentEpisode.air_date }}
-                </span>
+            <!-- TV episode chrome -->
+            <template v-if="!isMovie">
+              <div class="flex items-center justify-between mb-4">
+                <button
+                  v-if="prevEpisode"
+                  @click="navigateEpisode(prevEpisode)"
+                  class="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                  {{ t('player.previous') }}
+                </button>
+                <span v-else />
+                <button
+                  v-if="nextEpisode"
+                  @click="navigateEpisode(nextEpisode)"
+                  class="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  {{ t('player.next') }}
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               </div>
-              <h1 class="text-2xl font-bold text-white mb-2">{{ currentEpisode.name }}</h1>
+
+              <div v-if="currentEpisode">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-sm text-purple-400 font-medium">
+                    {{ t('player.episode', { n: currentEpisode.episode_number }) }}
+                  </span>
+                  <span v-if="currentEpisode.air_date" class="text-xs text-gray-500">
+                    {{ currentEpisode.air_date }}
+                  </span>
+                </div>
+                <h1 class="text-2xl font-bold text-white mb-2">{{ currentEpisode.name }}</h1>
+                <RouterLink
+                  :to="{ name: 'detail', params: { type: 'tv', id: itemId } }"
+                  class="text-sm text-gray-400 hover:text-purple-400 transition-colors"
+                >
+                  {{ title }}
+                </RouterLink>
+                <p v-if="currentEpisode.overview" class="text-gray-400 mt-4 leading-relaxed">
+                  {{ currentEpisode.overview }}
+                </p>
+              </div>
+            </template>
+
+            <!-- Movie chrome -->
+            <template v-else-if="movieDetail">
+              <h1 class="text-2xl font-bold text-white mb-2">{{ title }}</h1>
               <RouterLink
-                :to="{ name: 'detail', params: { id: showId } }"
+                :to="{ name: 'detail', params: { type: 'movie', id: itemId } }"
                 class="text-sm text-gray-400 hover:text-purple-400 transition-colors"
               >
-                {{ show?.name }}
+                {{ t('detail.released') }}: {{ movieDetail.release_date }}
               </RouterLink>
-              <p v-if="currentEpisode.overview" class="text-gray-400 mt-4 leading-relaxed">
-                {{ currentEpisode.overview }}
+              <p v-if="movieDetail.overview" class="text-gray-400 mt-4 leading-relaxed">
+                {{ movieDetail.overview }}
               </p>
-            </div>
+            </template>
 
             <div class="mt-6 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
               <h3 class="text-sm font-medium text-gray-300 mb-2">{{ t('player.shortcuts') }}</h3>
@@ -179,7 +227,7 @@ onMounted(async () => {
             </div>
           </div>
 
-          <div v-if="episodes.length > 1" class="lg:w-96 flex-shrink-0">
+          <div v-if="!isMovie && episodes.length > 1" class="lg:w-96 flex-shrink-0">
             <h2 class="text-lg font-semibold text-white mb-3">{{ t('player.episodes') }}</h2>
             <div class="space-y-1 max-h-[600px] overflow-y-auto pr-1">
               <div
@@ -188,7 +236,7 @@ onMounted(async () => {
                 :class="ep.id === currentEpisode?.id ? 'bg-purple-900/20 border-l-2 border-purple-500' : ''"
                 class="rounded-r-lg"
               >
-                <EpisodeCard :episode="ep" :show-id="showId" />
+                <EpisodeCard :episode="ep" :show-id="itemId" />
               </div>
             </div>
           </div>

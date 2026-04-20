@@ -1,3 +1,5 @@
+export type MediaType = 'tv' | 'movie'
+
 export interface Show {
   id: number
   name: string
@@ -12,6 +14,7 @@ export interface Show {
   origin_country: string[]
   original_language: string
   popularity: number
+  media_type?: 'tv'
 }
 
 export interface ShowDetail extends Show {
@@ -23,6 +26,33 @@ export interface ShowDetail extends Show {
   status: string
   tagline: string
 }
+
+export interface Movie {
+  id: number
+  title: string
+  original_title: string
+  overview: string
+  poster_path: string | null
+  backdrop_path: string | null
+  vote_average: number
+  vote_count: number
+  release_date: string
+  genre_ids: number[]
+  original_language: string
+  popularity: number
+  media_type?: 'movie'
+}
+
+export interface MovieDetail extends Movie {
+  genres: Genre[]
+  runtime: number | null
+  status: string
+  tagline: string
+  production_companies: { id: number; name: string; logo_path: string | null }[]
+}
+
+export type ContentItem = (Show & { media_type: 'tv' }) | (Movie & { media_type: 'movie' })
+export type ContentDetail = (ShowDetail & { media_type: 'tv' }) | (MovieDetail & { media_type: 'movie' })
 
 export interface Season {
   id: number
@@ -70,6 +100,7 @@ export interface WatchlistItem {
   name: string
   poster_path: string | null
   addedAt: number
+  mediaType: MediaType
 }
 
 export interface VideoResult {
@@ -129,4 +160,5 @@ export interface PlaybackProgress {
   showName?: string
   posterPath?: string | null
   episodeName?: string
+  mediaType: MediaType
 }

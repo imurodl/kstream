@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Show } from '../types'
+import type { ContentItem } from '../types'
 import { useDragScroll } from '../composables/useDragScroll'
 import ContentCard from './ContentCard.vue'
 import SkeletonCard from './SkeletonCard.vue'
@@ -10,7 +10,7 @@ const { t } = useI18n()
 
 defineProps<{
   title: string
-  shows: Show[]
+  items: ContentItem[]
   loading?: boolean
 }>()
 
@@ -61,9 +61,9 @@ function scroll(direction: 'left' | 'right') {
       </template>
       <template v-else>
         <ContentCard
-          v-for="show in shows"
-          :key="show.id"
-          :show="show"
+          v-for="item in items"
+          :key="item.id"
+          :item="item"
           class="snap-start"
         />
       </template>

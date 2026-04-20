@@ -3,12 +3,13 @@ import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useWatchlistStore } from '../stores/watchlist'
 import { posterUrl } from '../services/tmdb'
+import type { MediaType } from '../types'
 
 const { t } = useI18n()
 const watchlistStore = useWatchlistStore()
 
-function remove(showId: number) {
-  watchlistStore.removeFromWatchlist(showId)
+function remove(id: number, mediaType: MediaType) {
+  watchlistStore.removeFromWatchlist(id, mediaType)
 }
 </script>
 
@@ -33,10 +34,10 @@ function remove(showId: number) {
     <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
       <div
         v-for="item in watchlistStore.items"
-        :key="item.id"
+        :key="`${item.mediaType}-${item.id}`"
         class="group relative"
       >
-        <RouterLink :to="{ name: 'detail', params: { id: item.id } }" class="block">
+        <RouterLink :to="{ name: 'detail', params: { type: item.mediaType, id: item.id } }" class="block">
           <div class="relative aspect-[2/3] rounded-lg overflow-hidden bg-gray-800">
             <img
               :src="posterUrl(item.poster_path)"
@@ -44,13 +45,16 @@ function remove(showId: number) {
               class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
             />
+            <span class="absolute top-2 left-2 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-black/70 text-gray-300">
+              {{ item.mediaType }}
+            </span>
           </div>
           <h3 class="mt-2 text-sm font-medium text-gray-200 truncate group-hover:text-white transition-colors">
             {{ item.name }}
           </h3>
         </RouterLink>
         <button
-          @click="remove(item.id)"
+          @click="remove(item.id, item.mediaType)"
           class="absolute top-2 right-2 p-1.5 bg-black/70 rounded-full text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
           :aria-label="t('watchlist.remove')"
         >

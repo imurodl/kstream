@@ -26,7 +26,7 @@ const runtime = computed(() => {
 
 <template>
   <RouterLink
-    :to="{ name: 'player', params: { showId, episodeId: episode.id } }"
+    :to="{ name: 'player', params: { type: 'tv', id: showId, episodeId: episode.id } }"
     class="flex gap-4 p-3 rounded-lg hover:bg-gray-800/60 transition-colors group"
   >
     <!-- Thumbnail -->

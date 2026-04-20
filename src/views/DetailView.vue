@@ -2,10 +2,14 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import type { ShowDetail, Episode, CastMember, Show } from '../types'
-import { getTVShow, getSeasonEpisodes, getShowCredits, getRecommendations, getShowVideos, getTrailerKey, backdropUrl, posterUrl } from '../services/tmdb'
+import type { ShowDetail, MovieDetail, Episode, CastMember, ContentItem, MediaType } from '../types'
+import {
+  getDetail, getSeasonEpisodes, getCredits, getRecommendationsByType, getVideos,
+  getTrailerKey, backdropUrl, posterUrl, hasKRFlatrate,
+} from '../services/tmdb'
 import { useWatchlistStore } from '../stores/watchlist'
 import { useDragScroll } from '../composables/useDragScroll'
+import { getTitle, getReleaseDate, getYear, isSafeContent } from '../utils/content'
 import EpisodeCard from '../components/EpisodeCard.vue'
 import CastCard from '../components/CastCard.vue'
 import ContentCard from '../components/ContentCard.vue'
@@ -15,10 +19,10 @@ const { t } = useI18n()
 const route = useRoute()
 const watchlistStore = useWatchlistStore()
 
-const show = ref<ShowDetail | null>(null)
+const detail = ref<ShowDetail | MovieDetail | null>(null)
 const episodes = ref<Episode[]>([])
 const cast = ref<CastMember[]>([])
-const relatedShows = ref<Show[]>([])
+const related = ref<ContentItem[]>([])
 const trailerKey = ref<string | null>(null)
 const castScrollRef = ref<HTMLElement | null>(null)
 const relatedScrollRef = ref<HTMLElement | null>(null)
@@ -29,69 +33,107 @@ const loading = ref(true)
 const episodesLoading = ref(false)
 const error = ref('')
 
-const showId = computed(() => Number(route.params.id))
-const inWatchlist = computed(() => show.value ? watchlistStore.isInWatchlist(show.value.id) : false)
+const itemId = computed(() => Number(route.params.id))
+const mediaType = computed<MediaType>(() => (route.params.type as MediaType) || 'tv')
+const isMovie = computed(() => mediaType.value === 'movie')
 
-const year = computed(() => show.value?.first_air_date?.slice(0, 4) || '')
-const rating = computed(() => show.value?.vote_average?.toFixed(1) || '')
-const genreNames = computed(() => show.value?.genres?.map(g => g.name).join(', ') || '')
-const networkNames = computed(() => show.value?.networks?.map(n => n.name).join(', ') || '')
+const inWatchlist = computed(() =>
+  detail.value ? watchlistStore.isInWatchlist(detail.value.id, mediaType.value) : false
+)
+
+const title = computed(() => detail.value ? getTitle(detail.value) : '')
+const year = computed(() => detail.value ? getYear(detail.value) : '')
+const rating = computed(() => detail.value?.vote_average?.toFixed(1) || '')
+const genreNames = computed(() => detail.value?.genres?.map(g => g.name).join(', ') || '')
+
+// TV-specific
+const tvDetail = computed(() => isMovie.value ? null : (detail.value as ShowDetail | null))
+const networkNames = computed(() => tvDetail.value?.networks?.map(n => n.name).join(', ') || '')
+
+// Movie-specific
+const movieDetail = computed(() => isMovie.value ? (detail.value as MovieDetail | null) : null)
+const runtimeText = computed(() => {
+  const r = movieDetail.value?.runtime
+  return r ? t('detail.runtime', { n: r }) : ''
+})
+const releaseDateText = computed(() => movieDetail.value ? getReleaseDate(movieDetail.value) : '')
 
 function toggleWatchlist() {
-  if (!show.value) return
+  if (!detail.value) return
   if (inWatchlist.value) {
-    watchlistStore.removeFromWatchlist(show.value.id)
+    watchlistStore.removeFromWatchlist(detail.value.id, mediaType.value)
   } else {
     watchlistStore.addToWatchlist({
-      id: show.value.id,
-      name: show.value.name,
-      poster_path: show.value.poster_path,
+      id: detail.value.id,
+      name: title.value,
+      poster_path: detail.value.poster_path,
       addedAt: Date.now(),
+      mediaType: mediaType.value,
     })
   }
 }
 
 async function loadEpisodes(seasonNumber: number) {
-  if (!show.value) return
+  if (!tvDetail.value) return
   episodesLoading.value = true
   try {
-    const res = await getSeasonEpisodes(show.value.id, seasonNumber)
+    const res = await getSeasonEpisodes(tvDetail.value.id, seasonNumber)
     episodes.value = res.episodes
   } catch (e) {
-    // episodes failed to load — show empty state
     episodes.value = []
   } finally {
     episodesLoading.value = false
   }
 }
 
+function scrollRow(el: HTMLElement | null, direction: 'left' | 'right') {
+  if (!el) return
+  const amount = el.clientWidth * 0.75
+  el.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' })
+}
+
 watch(selectedSeason, (s) => loadEpisodes(s))
 
-async function loadShow() {
+async function load() {
   loading.value = true
   error.value = ''
-  show.value = null
+  detail.value = null
   episodes.value = []
   cast.value = []
-  relatedShows.value = []
+  related.value = []
   trailerKey.value = null
 
   try {
-    show.value = await getTVShow(showId.value)
-    if (show.value.seasons?.length) {
-      const firstReal = show.value.seasons.find(s => s.season_number > 0) || show.value.seasons[0]
-      selectedSeason.value = firstReal.season_number
+    detail.value = await getDetail(mediaType.value, itemId.value)
+
+    if (!isMovie.value) {
+      const tv = detail.value as ShowDetail
+      if (tv.seasons?.length) {
+        const firstReal = tv.seasons.find(s => s.season_number > 0) || tv.seasons[0]
+        selectedSeason.value = firstReal.season_number
+      }
+      await loadEpisodes(selectedSeason.value)
     }
-    await loadEpisodes(selectedSeason.value)
 
     const [creditsRes, recsRes, videosRes] = await Promise.all([
-      getShowCredits(showId.value).catch(() => ({ cast: [] })),
-      getRecommendations(showId.value).catch(() => ({ results: [] })),
-      getShowVideos(showId.value).catch(() => ({ results: [] })),
+      getCredits(mediaType.value, itemId.value).catch(() => ({ cast: [] as CastMember[] })),
+      getRecommendationsByType(mediaType.value, itemId.value).catch(() => ({ results: [] as ContentItem[] })),
+      getVideos(mediaType.value, itemId.value).catch(() => ({ results: [] })),
     ])
-    cast.value = creditsRes.cast.slice(0, 20)
-    relatedShows.value = recsRes.results.filter((s: Show) => s.poster_path && s.origin_country?.includes('KR')).slice(0, 12)
+    cast.value = (creditsRes.cast as CastMember[]).slice(0, 20)
     trailerKey.value = getTrailerKey(videosRes.results)
+
+    // Related must match this title's language + media_type (k-drama → k-drama, etc.)
+    // and live on KR subscription streaming — same allowlist as Browse. /recommendations has
+    // no server-side filters, so we over-fetch then check watch providers per item in parallel.
+    const sourceLang = detail.value.original_language
+    const candidates = recsRes.results
+      .filter(s => s.media_type === mediaType.value)
+      .filter(s => s.original_language === sourceLang)
+      .filter(s => isSafeContent(s, 20))
+      .slice(0, 24)
+    const flags = await Promise.all(candidates.map(s => hasKRFlatrate(mediaType.value, s.id)))
+    related.value = candidates.filter((_, i) => flags[i]).slice(0, 12)
   } catch (e) {
     error.value = t('detail.errorLoad')
   } finally {
@@ -99,8 +141,8 @@ async function loadShow() {
   }
 }
 
-watch(showId, () => loadShow())
-onMounted(() => loadShow())
+watch([itemId, mediaType], () => load())
+onMounted(() => load())
 </script>
 
 <template>
@@ -121,34 +163,34 @@ onMounted(() => loadShow())
     </div>
 
     <!-- Content -->
-    <template v-else-if="show">
+    <template v-else-if="detail">
       <!-- Backdrop -->
       <div class="relative w-full h-[50vh] min-h-[350px]">
         <img
-          :src="backdropUrl(show.backdrop_path, 'original')"
-          :alt="show.name"
+          :src="backdropUrl(detail.backdrop_path, 'original')"
+          :alt="title"
           class="absolute inset-0 w-full h-full object-cover"
         />
         <div class="absolute inset-0 bg-gradient-to-r from-[#0f0f0f] via-[#0f0f0f]/70 to-transparent" />
         <div class="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-transparent to-[#0f0f0f]/40" />
       </div>
 
-      <!-- Show info -->
+      <!-- Detail info -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-40 relative z-10">
         <div class="flex flex-col sm:flex-row gap-6 sm:gap-8">
           <!-- Poster -->
           <div class="flex-shrink-0 w-48 sm:w-56 mx-auto sm:mx-0">
             <img
-              :src="posterUrl(show.poster_path)"
-              :alt="show.name"
+              :src="posterUrl(detail.poster_path)"
+              :alt="title"
               class="w-full rounded-lg shadow-2xl"
             />
           </div>
 
           <!-- Info -->
           <div class="flex-1 pt-4 sm:pt-12">
-            <h1 class="text-3xl sm:text-4xl font-bold text-white mb-2">{{ show.name }}</h1>
-            <p v-if="show.tagline" class="text-gray-400 italic mb-3">{{ show.tagline }}</p>
+            <h1 class="text-3xl sm:text-4xl font-bold text-white mb-2">{{ title }}</h1>
+            <p v-if="detail.tagline" class="text-gray-400 italic mb-3">{{ detail.tagline }}</p>
 
             <div class="flex flex-wrap items-center gap-3 text-sm text-gray-400 mb-4">
               <span class="flex items-center gap-1 text-yellow-400 font-semibold">
@@ -158,21 +200,32 @@ onMounted(() => loadShow())
                 {{ rating }}
               </span>
               <span>{{ year }}</span>
-              <span v-if="networkNames">{{ networkNames }}</span>
-              <span>{{ show.number_of_seasons }} {{ t('detail.season') }}</span>
-              <span>{{ show.status }}</span>
+
+              <!-- TV-only meta -->
+              <template v-if="!isMovie && tvDetail">
+                <span v-if="networkNames">{{ networkNames }}</span>
+                <span>{{ tvDetail.number_of_seasons }} {{ t('detail.season') }}</span>
+                <span>{{ tvDetail.status }}</span>
+              </template>
+
+              <!-- Movie-only meta -->
+              <template v-else-if="movieDetail">
+                <span v-if="runtimeText">{{ runtimeText }}</span>
+                <span v-if="releaseDateText">{{ t('detail.released') }}: {{ releaseDateText }}</span>
+                <span>{{ movieDetail.status }}</span>
+              </template>
             </div>
 
             <p v-if="genreNames" class="text-sm text-gray-500 mb-4">{{ genreNames }}</p>
 
             <p class="text-sm sm:text-base text-gray-300 leading-relaxed mb-6 max-w-2xl">
-              {{ show.overview }}
+              {{ detail.overview }}
             </p>
 
             <!-- Actions -->
             <div class="flex gap-3">
               <RouterLink
-                :to="{ name: 'player', params: { showId: show.id } }"
+                :to="{ name: 'player', params: { type: mediaType, id: detail.id } }"
                 class="inline-flex items-center gap-2 bg-white text-black font-semibold px-6 py-2.5 rounded-md hover:bg-gray-200 transition-colors"
               >
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -208,35 +261,79 @@ onMounted(() => loadShow())
 
       <!-- Cast section -->
       <div v-if="cast.length" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
-        <h2 class="text-xl font-semibold text-white mb-4">{{ t('detail.cast') }}</h2>
-        <div ref="castScrollRef" class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-semibold text-white">{{ t('detail.cast') }}</h2>
+          <div class="hidden sm:flex gap-1">
+            <button
+              @click="scrollRow(castScrollRef, 'left')"
+              class="p-1.5 rounded-full bg-gray-800/60 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+              :aria-label="t('content.scrollLeft')"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              @click="scrollRow(castScrollRef, 'right')"
+              class="p-1.5 rounded-full bg-gray-800/60 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+              :aria-label="t('content.scrollRight')"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div ref="castScrollRef" class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth">
           <CastCard v-for="member in cast" :key="member.id" :cast="member" />
         </div>
       </div>
 
-      <!-- Related Shows -->
-      <div v-if="relatedShows.length" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        <h2 class="text-xl font-semibold text-white mb-4">{{ t('detail.relatedShows') }}</h2>
-        <div ref="relatedScrollRef" class="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+      <!-- Related -->
+      <div v-if="related.length" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-semibold text-white">{{ t('detail.relatedShows') }}</h2>
+          <div class="hidden sm:flex gap-1">
+            <button
+              @click="scrollRow(relatedScrollRef, 'left')"
+              class="p-1.5 rounded-full bg-gray-800/60 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+              :aria-label="t('content.scrollLeft')"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              @click="scrollRow(relatedScrollRef, 'right')"
+              class="p-1.5 rounded-full bg-gray-800/60 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+              :aria-label="t('content.scrollRight')"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div ref="relatedScrollRef" class="flex gap-3 overflow-x-auto pb-4 scrollbar-hide scroll-smooth">
           <ContentCard
-            v-for="s in relatedShows"
-            :key="s.id"
-            :show="s"
+            v-for="s in related"
+            :key="`${s.media_type}-${s.id}`"
+            :item="s"
           />
         </div>
       </div>
 
-      <!-- Episodes section -->
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <!-- Episodes section (TV only) -->
+      <div v-if="!isMovie && tvDetail" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-xl font-semibold text-white">{{ t('detail.episodes') }}</h2>
           <select
-            v-if="show.seasons && show.seasons.length > 1"
+            v-if="tvDetail.seasons && tvDetail.seasons.length > 1"
             v-model="selectedSeason"
             class="bg-gray-800 text-gray-300 text-sm rounded-lg px-3 py-2 border border-gray-700 outline-none focus:border-purple-500"
           >
             <option
-              v-for="season in show.seasons.filter(s => s.season_number > 0)"
+              v-for="season in tvDetail.seasons.filter(s => s.season_number > 0)"
               :key="season.id"
               :value="season.season_number"
             >
@@ -263,7 +360,7 @@ onMounted(() => loadShow())
             v-for="ep in episodes"
             :key="ep.id"
             :episode="ep"
-            :show-id="show.id"
+            :show-id="tvDetail.id"
           />
         </div>
 

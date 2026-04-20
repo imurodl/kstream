@@ -1,13 +1,20 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import type { Show } from '../types'
+import type { ContentItem, MediaType } from '../types'
 import { posterUrl } from '../services/tmdb'
+import { getTitle, getYear } from '../utils/content'
 
-const props = defineProps<{ show: Show }>()
+const props = defineProps<{
+  item: ContentItem
+  /** Optional override for items missing media_type (e.g. older Show shapes). Defaults to 'tv'. */
+  fallbackType?: MediaType
+}>()
 
-const year = computed(() => props.show.first_air_date?.slice(0, 4) || '')
-const rating = computed(() => props.show.vote_average?.toFixed(1))
+const mediaType = computed<MediaType>(() => props.item.media_type ?? props.fallbackType ?? 'tv')
+const title = computed(() => getTitle(props.item))
+const year = computed(() => getYear(props.item))
+const rating = computed(() => props.item.vote_average?.toFixed(1))
 const imgFailed = ref(false)
 
 function onImgError() { imgFailed.value = true }
@@ -15,14 +22,14 @@ function onImgError() { imgFailed.value = true }
 
 <template>
   <RouterLink
-    :to="{ name: 'detail', params: { id: show.id } }"
+    :to="{ name: 'detail', params: { type: mediaType, id: item.id } }"
     class="flex-shrink-0 w-40 sm:w-44 group cursor-pointer block"
   >
     <div class="relative aspect-[2/3] rounded-lg overflow-hidden bg-gray-800">
       <img
         v-if="!imgFailed"
-        :src="posterUrl(show.poster_path)"
-        :alt="show.name"
+        :src="posterUrl(item.poster_path)"
+        :alt="title"
         class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         loading="lazy"
         @error="onImgError"
@@ -40,7 +47,7 @@ function onImgError() { imgFailed.value = true }
       </div>
     </div>
     <h3 class="mt-2 text-sm font-medium text-gray-200 truncate group-hover:text-white transition-colors">
-      {{ show.name }}
+      {{ title }}
     </h3>
     <p class="text-xs text-gray-500">{{ year }}</p>
   </RouterLink>

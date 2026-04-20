@@ -14,12 +14,12 @@ const router = createRouter({
       component: () => import('../views/BrowseView.vue'),
     },
     {
-      path: '/show/:id',
+      path: '/content/:type(tv|movie)/:id',
       name: 'detail',
       component: () => import('../views/DetailView.vue'),
     },
     {
-      path: '/watch/:showId/:episodeId?',
+      path: '/watch/:type(tv|movie)/:id/:episodeId?',
       name: 'player',
       component: () => import('../views/PlayerView.vue'),
     },
@@ -32,6 +32,25 @@ const router = createRouter({
       path: '/watchlist',
       name: 'watchlist',
       component: () => import('../views/WatchlistView.vue'),
+    },
+    // ----- Legacy redirects -----
+    {
+      path: '/show/:id',
+      redirect: (to) => ({
+        name: 'detail',
+        params: { type: 'tv', id: to.params.id },
+      }),
+    },
+    {
+      path: '/watch/:showId(\\d+)/:episodeId?',
+      redirect: (to) => ({
+        name: 'player',
+        params: {
+          type: 'tv',
+          id: to.params.showId,
+          ...(to.params.episodeId ? { episodeId: to.params.episodeId } : {}),
+        },
+      }),
     },
   ],
   scrollBehavior() {

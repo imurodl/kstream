@@ -2,20 +2,23 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import type { Show } from '../types'
+import type { ContentItem, MediaType } from '../types'
 import { backdropUrl } from '../services/tmdb'
+import { getTitle, getYear } from '../utils/content'
 
 const { t } = useI18n()
-const props = defineProps<{ shows: Show[] }>()
+const props = defineProps<{ items: ContentItem[] }>()
 
 const currentIndex = ref(0)
 let timer: ReturnType<typeof setInterval> | null = null
 
-const currentShow = computed(() => props.shows[currentIndex.value])
-const year = computed(() => currentShow.value?.first_air_date?.slice(0, 4) || '')
-const rating = computed(() => currentShow.value?.vote_average?.toFixed(1))
+const currentItem = computed(() => props.items[currentIndex.value])
+const currentType = computed<MediaType>(() => currentItem.value?.media_type ?? 'tv')
+const title = computed(() => currentItem.value ? getTitle(currentItem.value) : '')
+const year = computed(() => currentItem.value ? getYear(currentItem.value) : '')
+const rating = computed(() => currentItem.value?.vote_average?.toFixed(1))
 const overview = computed(() => {
-  const text = currentShow.value?.overview || ''
+  const text = currentItem.value?.overview || ''
   return text.length > 200 ? text.slice(0, 200) + '...' : text
 })
 
@@ -26,7 +29,7 @@ function goTo(index: number) {
 
 function startTimer() {
   timer = setInterval(() => {
-    currentIndex.value = (currentIndex.value + 1) % props.shows.length
+    currentIndex.value = (currentIndex.value + 1) % props.items.length
   }, 7000)
 }
 
@@ -52,14 +55,14 @@ onBeforeUnmount(() => stopTimer())
     <!-- Slides -->
     <TransitionGroup name="hero-slide">
       <div
-        v-for="(show, i) in shows"
+        v-for="(item, i) in items"
         v-show="i === currentIndex"
-        :key="show.id"
+        :key="item.id"
         class="absolute inset-0"
       >
         <img
-          :src="backdropUrl(show.backdrop_path, 'original')"
-          :alt="show.name"
+          :src="backdropUrl(item.backdrop_path, 'original')"
+          :alt="getTitle(item)"
           class="absolute inset-0 w-full h-full object-cover"
         />
       </div>
@@ -73,9 +76,9 @@ onBeforeUnmount(() => stopTimer())
     <div class="absolute inset-0 flex items-end pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8">
       <div class="max-w-xl">
         <Transition name="hero-text" mode="out-in">
-          <div :key="currentShow?.id">
+          <div :key="currentItem?.id">
             <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-3">
-              {{ currentShow?.name }}
+              {{ title }}
             </h1>
             <div class="flex items-center gap-3 text-sm text-gray-300 mb-4">
               <span class="flex items-center gap-1 text-yellow-400 font-semibold">
@@ -91,7 +94,7 @@ onBeforeUnmount(() => stopTimer())
             </p>
             <div class="flex gap-3">
               <RouterLink
-                :to="{ name: 'player', params: { showId: currentShow?.id } }"
+                :to="{ name: 'player', params: { type: currentType, id: currentItem?.id } }"
                 class="inline-flex items-center gap-2 bg-white text-black font-semibold px-6 py-2.5 rounded-md hover:bg-gray-200 transition-colors"
               >
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -100,7 +103,7 @@ onBeforeUnmount(() => stopTimer())
                 {{ t('hero.watchNow') }}
               </RouterLink>
               <RouterLink
-                :to="{ name: 'detail', params: { id: currentShow?.id } }"
+                :to="{ name: 'detail', params: { type: currentType, id: currentItem?.id } }"
                 class="inline-flex items-center gap-2 bg-gray-600/50 text-white font-semibold px-6 py-2.5 rounded-md hover:bg-gray-600/70 transition-colors"
               >
                 {{ t('hero.moreInfo') }}
@@ -112,8 +115,8 @@ onBeforeUnmount(() => stopTimer())
         <!-- Dot indicators -->
         <div class="flex gap-2 mt-6">
           <button
-            v-for="(show, i) in shows"
-            :key="show.id"
+            v-for="(item, i) in items"
+            :key="item.id"
             @click="goTo(i)"
             class="h-1 rounded-full transition-all duration-300"
             :class="i === currentIndex ? 'w-8 bg-white' : 'w-4 bg-gray-600 hover:bg-gray-400'"

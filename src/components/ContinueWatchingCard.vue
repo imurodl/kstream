@@ -12,11 +12,19 @@ const progressPercent = computed(() => {
   if (!props.item.duration) return 0
   return Math.min(100, Math.round((props.item.currentTime / props.item.duration) * 100))
 })
+
+const linkTo = computed(() => {
+  const type = props.item.mediaType || 'tv'
+  if (type === 'movie') {
+    return { name: 'player', params: { type, id: props.item.showId } }
+  }
+  return { name: 'player', params: { type, id: props.item.showId, episodeId: props.item.episodeId } }
+})
 </script>
 
 <template>
   <RouterLink
-    :to="{ name: 'player', params: { showId: item.showId, episodeId: item.episodeId } }"
+    :to="linkTo"
     class="flex-shrink-0 w-56 sm:w-64 group cursor-pointer block"
   >
     <div class="relative aspect-video rounded-lg overflow-hidden bg-gray-800">
